@@ -36,25 +36,36 @@
   }
   .overlay.show { opacity: 1; }
 
-  /* ─── CARTA — fuera de cualquier padre con transform ─── */
-  /* position:fixed funciona correctamente solo cuando ningún ancestro tiene transform */
+  /* ─── CARTA ─── */
   .letter-container {
     position: fixed;
-    top: 50%;
+    top: 0;
     left: 50%;
+    transform: translateX(-50%) translateY(30px);
     width: min(560px, 92vw);
-    transform: translate(-50%, -50%) scale(0.88);
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2.5rem 0 3rem;
     opacity: 0;
     pointer-events: none;
     z-index: 110;
+    scroll-behavior: smooth;
     transition:
       transform 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.05) 0.15s,
       opacity   0.55s ease                               0.15s;
   }
   .letter-container.show {
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(-50%) translateY(0);
     opacity: 1;
     pointer-events: auto;
+  }
+  /* Scrollbar discreta */
+  .letter-container::-webkit-scrollbar { width: 4px; }
+  .letter-container::-webkit-scrollbar-track { background: transparent; }
+  .letter-container::-webkit-scrollbar-thumb {
+    background: rgba(180,50,80,0.35);
+    border-radius: 4px;
   }
 
   .letter {
@@ -125,12 +136,12 @@
 
   .letter-body {
     font-family: 'Dancing Script', cursive;
-    font-size: 1.12rem;
+    font-size: 1.18rem;
     color: #281010;
-    line-height: 2;
-    text-align: center;
+    line-height: 1.85;
+    text-align: left;
   }
-  .letter-body p { margin-bottom: 0.85rem; }
+  .letter-body p { margin-bottom: 1.2rem; }
   .letter-body p:last-child { margin-bottom: 0; }
 
   .letter-sign {
@@ -394,12 +405,12 @@
     </div>
 
     <div class="letter-body">
-      <p>Hay personas que llegan sin avisar<br>y tú fuiste así conmigo.<br>Al comienzo eras alguien más<br>y ahora eres alguien en quien<br>no dejo de pensar.</p>
-      <p>No sé en qué momento me acostumbré<br>a hablar contigo todos los días,<br>a esperar tus mensajes,<br>a sonreír por cosas pequeñas que dices.<br>Pero pasó, y ahora eres importante para mí,<br>más de lo que pensé.</p>
-      <p>Me importas de una forma distinta.<br>Me importa si estás bien, si dormiste,<br>si algo te preocupa.<br>A veces quisiera poder hacer más por ti,<br>incluso sin que me lo pidas.</p>
-      <p>Y la verdad ya no puedo seguir<br>viéndote solo como una amiga.<br>Lo intenté, pero lo que siento por ti<br>creció sin darme cuenta.</p>
-      <p>No te lo digo para presionarte<br>ni para que todo cambie de golpe.<br>Te lo digo porque eres importante para mí<br>y porque siento que mereces saberlo.</p>
-      <p>Pase lo que pase, de verdad quiero que estés bien.<br>Pero también quería ser sincero contigo<br>porque tú vales mucho para mí.</p>
+      <p>Hay personas que llegan sin avisar y tú fuiste así conmigo. Al comienzo eras alguien más y ahora eres alguien en quien no dejo de pensar.</p>
+      <p>No sé en qué momento me acostumbré a hablar contigo todos los días, a esperar tus mensajes, a sonreír por cosas pequeñas que dices. Pero pasó, y ahora eres importante para mí, más de lo que pensé.</p>
+      <p>Me importas de una forma distinta. Me importa si estás bien, si dormiste, si algo te preocupa. A veces quisiera poder hacer más por ti, incluso sin que me lo pidas.</p>
+      <p>Y la verdad ya no puedo seguir viéndote solo como una amiga. Lo intenté, pero lo que siento por ti creció sin darme cuenta.</p>
+      <p>No te lo digo para presionarte ni para que todo cambie de golpe. Te lo digo porque eres importante para mí y porque siento que mereces saberlo.</p>
+      <p>Pase lo que pase, de verdad quiero que estés bien. Pero también quería ser sincero contigo, porque tú vales mucho para mí.</p>
     </div>
 
     <div class="letter-sign">Con todo lo que siento 💕</div>
