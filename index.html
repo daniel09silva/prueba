@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Milagros</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 65% 55% at 25% 15%, #3d0a1a, transparent),
+      radial-gradient(ellipse 65% 55% at 75% 85%, #2a0614, transparent),
+      #100308;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    overflow: hidden;
+    transition: opacity 0.7s ease;
+  }
+
+  body.fade-out { opacity: 0; }
+
+  canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+  /* ── TARJETA ── */
+  .card {
+    position: relative;
+    z-index: 1;
+    background: rgba(253, 248, 238, 0.04);
+    border: 1px solid rgba(200, 150, 100, 0.18);
+    border-radius: 16px;
+    padding: 3rem 2.5rem 2.5rem;
+    width: min(360px, 90vw);
+    text-align: center;
+    backdrop-filter: blur(12px);
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(200,120,80,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    animation: cardIn 0.8s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(28px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+
+  /* ── ROSA ── */
+  .rose-icon {
+    font-size: 3.2rem;
+    display: block;
+    margin-bottom: 1.2rem;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 20px rgba(200,50,80,0.5));
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(-3deg); }
+    50%      { transform: translateY(-8px) rotate(3deg); }
+  }
+
+  /* ── TÍTULOS ── */
+  .card-title {
+    font-family: 'Dancing Script', cursive;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f5e0d0;
+    margin-bottom: 0.4rem;
+    text-shadow: 0 0 30px rgba(200,80,100,0.4);
+  }
+
+  .card-sub {
+    font-family: 'Dancing Script', cursive;
+    font-size: 1rem;
+    color: rgba(255,180,190,0.6);
+    margin-bottom: 2rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── INPUT ── */
+  .input-wrap {
+    position: relative;
+    margin-bottom: 1.2rem;
+  }
+
+  .input-wrap input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(200,130,100,0.28);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem 0.9rem 3rem;
+    font-size: 1.35rem;
+    letter-spacing: 0.25em;
+    color: #f5e0d0;
+    outline: none;
+    font-family: 'Playfair Display', serif;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    caret-color: #e06080;
+  }
+
+  .input-wrap input::placeholder {
+    color: rgba(200,150,130,0.4);
+    letter-spacing: 0.12em;
+    font-size: 1rem;
+  }
+
+  .input-wrap input:focus {
+    border-color: rgba(220,80,100,0.55);
+    box-shadow: 0 0 0 3px rgba(200,50,80,0.12), 0 0 20px rgba(200,50,80,0.08);
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ── BOTÓN ── */
+  .btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, #b02438 0%, #d04060 50%, #b02438 100%);
+    background-size: 200% 100%;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background-position 0.4s ease, transform 0.15s ease, box-shadow 0.3s;
+    box-shadow: 0 4px 20px rgba(180,30,60,0.45);
+  }
+  .btn:hover {
+    background-position: 100% 0;
+    box-shadow: 0 6px 28px rgba(200,40,70,0.55);
+    transform: translateY(-1px);
+  }
+  .btn:active { transform: scale(0.97); }
+
+  /* ── ERROR ── */
+  .error-msg {
+    margin-top: 0.9rem;
+    font-family: 'Dancing Script', cursive;
+    font-size: 0.95rem;
+    color: #f07090;
+    opacity: 0;
+    transition: opacity 0.3s;
+    min-height: 1.2em;
+  }
+  .error-msg.show { opacity: 1; }
+
+  /* ── SHAKE ── */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-8px); }
+    40%      { transform: translateX(8px); }
+    60%      { transform: translateX(-5px); }
+    80%      { transform: translateX(5px); }
+  }
+  .shake { animation: shake 0.45s ease; }
+
+  /* ── DIVISOR ── */
+  .divider {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin: 1.8rem 0 0;
+    color: rgba(200,140,120,0.35);
+    font-size: 0.75rem;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: rgba(200,140,100,0.18);
+  }
+
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="card" id="card">
+  <span class="rose-icon">🌹</span>
+
+  <h1 class="card-title">Para Milagros</h1>
+  <p class="card-sub">Escribe la contraseña para abrir tu carta</p>
+
+  <div class="input-wrap">
+    <span class="input-icon">🔑</span>
+    <input
+      type="password"
+      id="pwd"
+      placeholder="Contraseña secreta"
+      maxlength="30"
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter') check()"
+    />
+  </div>
+
+  <button class="btn" onclick="check()">Abrir carta →</button>
+  <p class="error-msg" id="err">Contraseña incorrecta 💔</p>
+
+  <div class="divider">♡ ♡ ♡</div>
+</div>
+
+<script>
+/* ── Partículas ── */
+(function () {
+  const cv  = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const syms = ['🌸','🌺','🌹','❤️','✿','♡'];
+  let W, H;
+
+  const pts = Array.from({length: 18}, () => ({
+    x: 0, y: 0,
+    s:  syms[Math.random() * syms.length | 0],
+    sz: 10 + Math.random() * 14,
+    sp: 0.25 + Math.random() * 0.4,
+    dx: (Math.random() - 0.5) * 0.35,
+    al: 0.08 + Math.random() * 0.18,
+    a:  Math.random() * Math.PI * 2,
+    da: (Math.random() - 0.5) * 0.012,
+  }));
+
+  function resize() {
+    W = cv.width  = innerWidth;
+    H = cv.height = innerHeight;
+    pts.forEach(p => { p.x = Math.random() * W; p.y = Math.random() * H; });
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  (function loop() {
+    ctx.clearRect(0, 0, W, H);
+    for (const p of pts) {
+      ctx.save();
+      ctx.globalAlpha = p.al;
+      ctx.font = p.sz + 'px serif';
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.a);
+      ctx.fillText(p.s, -p.sz * 0.4, p.sz * 0.4);
+      ctx.restore();
+      p.y += p.sp; p.x += p.dx; p.a += p.da;
+      if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── Login ── */
+function check() {
+  const pwd   = document.getElementById('pwd').value.trim().toLowerCase();
+  const err   = document.getElementById('err');
+  const input = document.getElementById('pwd');
+
+  if (pwd === 'mili') {
+    err.classList.remove('show');
+    document.body.classList.add('fade-out');
+    setTimeout(() => { location.href = 'carta_para_milagros.html'; }, 700);
+  } else {
+    err.classList.add('show');
+    input.classList.remove('shake');
+    void input.offsetWidth;
+    input.classList.add('shake');
+    input.value = '';
+    input.focus();
+  }
+}
+</script>
+</body>
+</html>

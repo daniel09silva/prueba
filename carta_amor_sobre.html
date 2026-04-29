@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para ti</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 65% 55% at 25% 15%, #3d0a1a, transparent),
+      radial-gradient(ellipse 65% 55% at 75% 85%, #2a0614, transparent),
+      #100308;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+  /* ─── OVERLAY oscuro detrás de la carta ─── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 0, 8, 0.85);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 105;
+    transition: opacity 0.65s ease;
+  }
+  .overlay.show { opacity: 1; }
+
+  /* ─── CARTA — fuera de cualquier padre con transform ─── */
+  /* position:fixed funciona correctamente solo cuando ningún ancestro tiene transform */
+  .letter-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(340px, 90vw);
+    transform: translate(-50%, -50%) scale(0.88);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 110;
+    transition:
+      transform 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.05) 0.15s,
+      opacity   0.55s ease                               0.15s;
+  }
+  .letter-container.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .letter {
+    background: #fdf8ee;
+    border-radius: 3px 3px 6px 6px;
+    padding: 2.2rem 2rem 1.8rem;
+    box-shadow:
+      0 40px 110px rgba(0,0,0,0.7),
+      0 10px 30px  rgba(0,0,0,0.35),
+      0 0 0 1px rgba(185,140,70,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Franja roja superior */
+  .letter::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #600c18, #b02438, #da4c68, #b02438, #600c18);
+    border-radius: 3px 3px 0 0;
+  }
+
+  /* Líneas de papel */
+  .letter::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      transparent 0px, transparent 29px,
+      rgba(140,100,40,0.09) 29px, rgba(140,100,40,0.09) 30px
+    );
+    pointer-events: none;
+  }
+
+  .letter > * { position: relative; z-index: 1; }
+
+  .letter-header { text-align: center; margin-bottom: 1.4rem; }
+  .letter-roses  { font-size: 1.55rem; letter-spacing: 0.3em; margin-bottom: 0.55rem; }
+
+  .letter-title {
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #600c18;
+    line-height: 1.15;
+  }
+
+  .letter-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    margin: 0.85rem auto 0;
+    color: #b02438;
+    font-size: 0.8rem;
+    opacity: 0.6;
+  }
+  .letter-divider::before,
+  .letter-divider::after {
+    content: '';
+    display: block;
+    width: 44px; height: 1px;
+    background: linear-gradient(90deg, transparent, #b02438);
+  }
+  .letter-divider::after { background: linear-gradient(270deg, transparent, #b02438); }
+
+  .letter-body {
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.12rem;
+    color: #281010;
+    line-height: 2;
+    text-align: center;
+  }
+  .letter-body p { margin-bottom: 0.85rem; }
+  .letter-body p:last-child { margin-bottom: 0; }
+
+  .letter-sign {
+    margin-top: 1.35rem;
+    text-align: right;
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #600c18;
+  }
+
+  .letter-hearts {
+    text-align: center;
+    margin-top: 0.85rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.55em;
+    color: #b02438;
+    opacity: 0.45;
+  }
+
+  .corner {
+    position: absolute;
+    font-size: 17px;
+    opacity: 0.14;
+    pointer-events: none;
+    z-index: 1;
+    line-height: 1;
+  }
+  .corner.tl { top: 10px; left: 10px; }
+  .corner.tr { top: 10px; right: 10px; transform: scaleX(-1); }
+  .corner.bl { bottom: 10px; left: 10px; transform: scaleY(-1); }
+  .corner.br { bottom: 10px; right: 10px; transform: scale(-1); }
+
+  /* ─── ESCENA ─── */
+  .scene {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .hint {
+    font-family: 'Dancing Script', cursive;
+    color: rgba(255, 175, 185, 0.75);
+    font-size: 1.15rem;
+    letter-spacing: 0.07em;
+    text-shadow: 0 0 24px rgba(200, 40, 70, 0.45);
+    animation: breathe 2.6s ease-in-out infinite;
+    transition: opacity 0.7s;
+  }
+  @keyframes breathe {
+    0%,100% { opacity: 0.45; }
+    50%      { opacity: 1; }
+  }
+
+  /* ─── WRAPPER ─── */
+  .envelope-wrapper {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease, opacity 0.7s ease;
+  }
+  .envelope-wrapper:hover  { transform: translateY(-8px) scale(1.025); }
+  .envelope-wrapper:active { transform: scale(0.97); }
+
+  /* ─── ENVELOPE 360 × 240 ─── */
+  .envelope {
+    width: 360px;
+    height: 240px;
+    position: relative;
+    perspective: 1500px;
+  }
+
+  .env-base {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(155deg, #f2e2c0 0%, #e8d4a0 55%, #ddc48a 100%);
+    border-radius: 3px 3px 8px 8px;
+    box-shadow:
+      0 24px 70px rgba(0,0,0,0.65),
+      0 8px  22px rgba(0,0,0,0.35),
+      0 2px  6px  rgba(0,0,0,0.2);
+  }
+
+  .env-left {
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, #c6a66a, #d8bc8a);
+    clip-path: polygon(0 0, 50% 56%, 0 100%);
+  }
+
+  .env-right {
+    position: absolute; inset: 0;
+    background: linear-gradient(260deg, #be9e64, #d0b47e);
+    clip-path: polygon(100% 0, 50% 56%, 100% 100%);
+  }
+
+  .env-bottom {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, #b08848 0%, #c89e68 55%, #d4ae78 100%);
+    clip-path: polygon(0 100%, 50% 56%, 100% 100%);
+    z-index: 2;
+  }
+
+  .env-deco {
+    position: absolute;
+    bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.2;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Tapa — clip-path directo, sin hijos, sin spike artifacts */
+  .env-flap {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, #efd8b0 0%, #e2c896 55%, #d4b47e 100%);
+    clip-path: polygon(0 0, 50% 56%, 100% 0);
+    transform-origin: top center;
+    transition: transform 1s cubic-bezier(0.22, 0, 0.08, 1);
+    z-index: 5;
+    backface-visibility: hidden;
+  }
+  .env-flap.open { transform: rotateX(180deg); }
+
+  /* Sello de lacre */
+  .wax-seal {
+    position: absolute;
+    top: 134px; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 66px; height: 66px;
+    background: radial-gradient(circle at 38% 30%, #f24060 0%, #c0183a 42%, #880c20 100%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 27px;
+    z-index: 10;
+    box-shadow:
+      0 5px 20px rgba(0,0,0,0.55),
+      0 2px 6px  rgba(0,0,0,0.35),
+      inset 0 2px 7px rgba(255,255,255,0.32),
+      inset 0 -3px 9px rgba(0,0,0,0.32);
+    border: 3px solid rgba(110,6,18,0.55);
+    transition: opacity 0.4s ease, transform 0.55s cubic-bezier(0.4,0,0.2,1);
+  }
+  .wax-seal::before {
+    content: '';
+    position: absolute; inset: 7px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.22);
+  }
+  .wax-seal.gone {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.12) rotate(55deg);
+  }
+
+  /* ─── REPRODUCTOR FLOTANTE ─── */
+  .music-player {
+    position: fixed;
+    bottom: 1.4rem;
+    right: 1.4rem;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: rgba(10, 2, 18, 0.82);
+    border: 1px solid rgba(200,130,100,0.2);
+    border-radius: 50px;
+    padding: 0.45rem 0.9rem 0.45rem 0.55rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  }
+  .music-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 0;
+    transition: transform 0.2s;
+  }
+  .music-toggle:hover { transform: scale(1.2); }
+  .music-label {
+    font-family: 'Dancing Script', cursive;
+    font-size: 0.78rem;
+    color: rgba(255,175,185,0.6);
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+  }
+  .music-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 16px;
+  }
+  .music-bars span {
+    width: 3px;
+    background: #d04060;
+    border-radius: 2px;
+    animation: bar 0.9s ease-in-out infinite;
+    opacity: 0.75;
+  }
+  .music-bars span:nth-child(1) { animation-delay: 0s;    height: 8px; }
+  .music-bars span:nth-child(2) { animation-delay: 0.18s; height: 14px; }
+  .music-bars span:nth-child(3) { animation-delay: 0.36s; height: 10px; }
+  .music-bars.paused span { animation-play-state: paused; }
+  @keyframes bar {
+    0%,100% { transform: scaleY(0.4); }
+    50%      { transform: scaleY(1); }
+  }
+
+  /* ─── CORAZONES ─── */
+  .hb { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
+  .h {
+    position: absolute;
+    animation: pop var(--dur) ease-out var(--del) forwards;
+    opacity: 0;
+  }
+  @keyframes pop {
+    0%   { transform: translateY(0) scale(0) rotate(0deg); opacity: 0; }
+    14%  { opacity: 1; }
+    72%  { opacity: 0.9; }
+    100% { transform: translateY(var(--dy)) scale(1.1) rotate(var(--r)); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div class="hb" id="hb"></div>
+
+<!-- Audio -->
+<audio id="bg-music" src="New West - Those Eyes  Letra (Ingles - Español).mp3" loop></audio>
+
+<!-- Reproductor flotante -->
+<div class="music-player">
+  <button class="music-toggle" id="music-toggle" onclick="toggleMusic()" title="Pausar / Reproducir">🎵</button>
+  <div class="music-bars" id="music-bars">
+    <span></span><span></span><span></span>
+  </div>
+  <span class="music-label">Those Eyes · New West</span>
+</div>
+
+<!-- Overlay oscuro — hijo directo de body, sin ancestro con transform -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Carta — hijo directo de body → position:fixed funciona correctamente -->
+<div class="letter-container" id="letter">
+  <div class="letter">
+    <div class="corner tl">✿</div>
+    <div class="corner tr">✿</div>
+    <div class="corner bl">✿</div>
+    <div class="corner br">✿</div>
+
+    <div class="letter-header">
+      <div class="letter-roses">🌹 🌸 🌹</div>
+      <div class="letter-title">Para ti, mi amor</div>
+      <div class="letter-divider">♡</div>
+    </div>
+
+    <div class="letter-body">
+      <p>Cada día que pasa<br>me recuerda lo afortunado<br>que soy de tenerte.</p>
+      <p>Eres la luz que ilumina<br>mis mañanas y la calma<br>que abraza mis noches.</p>
+      <p>En cada latido,<br>en cada suspiro,<br>estás tú.</p>
+    </div>
+
+    <div class="letter-sign">Con todo mi amor 💕</div>
+    <div class="letter-hearts">♡ &nbsp; ♡ &nbsp; ♡</div>
+  </div>
+</div>
+
+<!-- Escena principal -->
+<div class="scene">
+  <p class="hint" id="hint">✦ Toca el sobre para abrir ✦</p>
+
+  <div class="envelope-wrapper" id="wrap" onclick="openEnvelope()">
+    <div class="wax-seal" id="seal"></div>
+
+    <div class="envelope">
+      <div class="env-base"></div>
+      <div class="env-left"></div>
+      <div class="env-right"></div>
+      <div class="env-bottom"></div>
+
+      <svg class="env-deco" width="220" height="56" viewBox="0 0 220 56">
+        <g fill="#7a4020" stroke="#7a4020" stroke-width="0.9" stroke-linecap="round">
+          <circle cx="110" cy="28" r="3.5"/>
+          <circle cx="93"  cy="23" r="2.7"/>
+          <circle cx="127" cy="23" r="2.7"/>
+          <circle cx="77"  cy="31" r="2.1"/>
+          <circle cx="143" cy="31" r="2.1"/>
+          <line x1="93"  y1="23" x2="110" y2="28"/>
+          <line x1="127" y1="23" x2="110" y2="28"/>
+          <line x1="77"  y1="31" x2="93"  y2="23"/>
+          <line x1="143" y1="31" x2="127" y2="23"/>
+          <ellipse cx="84"  cy="16" rx="6.5" ry="3" transform="rotate(-38 84 16)"/>
+          <ellipse cx="136" cy="16" rx="6.5" ry="3" transform="rotate(38 136 16)"/>
+          <ellipse cx="67"  cy="38" rx="6.5" ry="3" transform="rotate(-52 67 38)"/>
+          <ellipse cx="153" cy="38" rx="6.5" ry="3" transform="rotate(52 153 38)"/>
+        </g>
+      </svg>
+
+      <div class="env-flap" id="flap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Música ── */
+const bgMusic     = document.getElementById('bg-music');
+const musicBars   = document.getElementById('music-bars');
+const musicToggle = document.getElementById('music-toggle');
+bgMusic.volume = 0.45;
+
+function startMusic() {
+  bgMusic.play().catch(() => {});
+  document.removeEventListener('click',   startMusic);
+  document.removeEventListener('keydown', startMusic);
+}
+
+bgMusic.play().catch(() => {
+  document.addEventListener('click',   startMusic);
+  document.addEventListener('keydown', startMusic);
+});
+
+function toggleMusic() {
+  if (bgMusic.paused) {
+    bgMusic.play();
+    musicToggle.textContent = '🎵';
+    musicBars.classList.remove('paused');
+  } else {
+    bgMusic.pause();
+    musicToggle.textContent = '🔇';
+    musicBars.classList.add('paused');
+  }
+}
+
+/* ── Partículas ── */
+(function () {
+  const cv  = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const syms = ['🌸','🌺','🌹','❤️','✿','♡'];
+  let W, H;
+
+  const pts = Array.from({length: 20}, () => ({
+    x: 0, y: 0,
+    s:  syms[Math.random() * syms.length | 0],
+    sz: 10 + Math.random() * 14,
+    sp: 0.28 + Math.random() * 0.45,
+    dx: (Math.random() - 0.5) * 0.36,
+    al: 0.1 + Math.random() * 0.2,
+    a:  Math.random() * Math.PI * 2,
+    da: (Math.random() - 0.5) * 0.013,
+  }));
+
+  function resize() {
+    W = cv.width  = innerWidth;
+    H = cv.height = innerHeight;
+    pts.forEach(p => { p.x = Math.random() * W; p.y = Math.random() * H; });
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  (function loop() {
+    ctx.clearRect(0, 0, W, H);
+    for (const p of pts) {
+      ctx.save();
+      ctx.globalAlpha = p.al;
+      ctx.font = p.sz + 'px serif';
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.a);
+      ctx.fillText(p.s, -p.sz * 0.4, p.sz * 0.4);
+      ctx.restore();
+      p.y += p.sp; p.x += p.dx; p.a += p.da;
+      if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── Abrir sobre ── */
+let done = false;
+
+function openEnvelope() {
+  if (done) return;
+  done = true;
+
+  const flap    = document.getElementById('flap');
+  const seal    = document.getElementById('seal');
+  const letter  = document.getElementById('letter');
+  const overlay = document.getElementById('overlay');
+  const hint    = document.getElementById('hint');
+  const wrap    = document.getElementById('wrap');
+
+  hint.style.opacity = '0';
+  seal.classList.add('gone');
+
+  /* Tapa se abre */
+  setTimeout(() => flap.classList.add('open'), 140);
+
+  /* Overlay oscuro + carta aparecen */
+  setTimeout(() => {
+    overlay.classList.add('show');
+    letter.classList.add('show');
+  }, 720);
+
+  /* Sobre se desvanece */
+  setTimeout(() => { wrap.style.opacity = '0'; }, 850);
+
+  /* Corazones */
+  setTimeout(burst, 1050);
+
+  wrap.style.cursor = 'default';
+}
+
+function burst() {
+  const hb     = document.getElementById('hb');
+  const glyphs = ['❤️','💕','💗','💖','💝','🌹','✨','💫','🌸'];
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+
+  for (let i = 0; i < 24; i++) {
+    const el = document.createElement('div');
+    el.className = 'h';
+    el.textContent = glyphs[Math.random() * glyphs.length | 0];
+    el.style.left = cx + (Math.random() - 0.5) * 380 + 'px';
+    el.style.top  = cy + (Math.random() - 0.5) * 260 + 'px';
+    el.style.fontSize = 14 + Math.random() * 24 + 'px';
+    el.style.setProperty('--r',   (Math.random() - 0.5) * 110 + 'deg');
+    el.style.setProperty('--dy',  -(110 + Math.random() * 210) + 'px');
+    el.style.setProperty('--del', Math.random() * 0.65 + 's');
+    el.style.setProperty('--dur', 1.8 + Math.random() * 0.9 + 's');
+    hb.appendChild(el);
+    setTimeout(() => el.remove(), 3600);
+  }
+}
+</script>
+</body>
+</html>
